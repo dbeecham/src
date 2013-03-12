@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+""" 
+A BTPD (BitTorrent Protocol Daemon) torrent loader.
+Designed to be run as a cron-job.
+"""
+
+import os
+#import subprocess
+import configparser
+import argparse
+
+if __name__ == "__main__":
+
+    OPTIONS = (
+        'source',
+        'target'
+    )
+
+    # Set up arguments. {{{
+    ARGPARSER = argparse.ArgumentParser(description='Loads torrents'
+                                             'inte btpd via btcli.')
+    ARGPARSER.add_argument('--config', '-c', help='Configuration'
+                                'file to use, defaults to ~/.btpdloadrc.')
+    ARGPARSER.add_argument('--yes', '-y', action='store_true', help='Do it.')
+
+    # And get the arguments.
+    ARGS = ARGPARSER.parse_args()
+    ARGS = vars(ARGS)
+
+    # What config file are we using?
+    if ARGS['config'] == None:
+        CONFIGFILE = '~/.btpdloadrc'
+    else:
+        CONFIGFILE = ARGS['config']
+
+    # Make sure we've got a proper path to use.
+    CONFIGFILE = os.path.expanduser(CONFIGFILE)
+    # }}}
+
+
+    # Set up configuration. {{{
+    CFGHANDLER = configparser.ConfigParser()
+    CFGHANDLER.read(CONFIGFILE)
+
+    CONFIG = {}
+
+    for section in CFGHANDLER.sections():
+        CONFIG[section] = {}
+        for option in OPTIONS:
+            if CFGHANDLER.has_option(section, option):
+                CONFIG[section][option] = CFGHANDLER.get(section, option)
+            else:
+                CONFIG[section][option] = None
+
+    print(CONFIG)
+
+    # }}}
+
+
+    # Sanity-checks. {{{
+    for section, sectionvalue in CONFIG.items():
+        for option in OPTIONS:
+            if sectionvalue[option] != None:
+                # Expand user (~, %HOMEPATH%, ...)
+                sectionvalue[option] = os.path.expanduser(sectionvalue[option])
+
+                # Make sure directory exists.
+                if not os.path.isdir(sectionvalue[option]):
+                    exit("section '%s', option '%s', target '%s' is "
+                         "not a directory." % (section, option,
+                                               sectionvalue[option]))
+
+            else:
+                if section != 'default':
+                    if 'default' not in CONFIG:
+                        exit("section '%s', option '%s' has no value, "
+                             "and there is no default value for it." % (section, 
+                                                                        option))
+                    elif CONFIG['default'][option] == None:
+                        exit("section '%s', option '%s' has no value, "
+                             "and there is no default value for it." % (section, 
+                                                                        option))
+                    else:
+                        sectionvalue[option] = CONFIG['default'][option]
+
+
+    # }}}
+
+    print(CONFIG)
+
+    # 
+
+
+
+# These will be read from a configuration file soon.
+#torrentsdir = "/home/zhaozhou/torrents"
+#cnf = {"movies": "/mnt/zoidberg/movies",
+#       "series": "/mnt/zoidberg/series"}
+
+#for directory in os.listdir(torrentsdir):
+#    if directory in cnf:
+#        for torrent in os.listdir(os.path.join(torrentsdir, directory)):
+#            targetdirectory = os.path.join(cnf[directory],
+#                                           torrent.rstrip(".torrent"))
+#            torrent = os.path.join(torrentsdir, directory, torrent)
+#            if not os.path.isdir(targetdirectory):
+#                os.mkdir(targetdirectory)
+#
+#                if subprocess.call(["btcli", "add", "-d", targetdirectory,
+#                                            torrent]):
+#                    print("Could not load torrent " + torrent)
+#                else:
+#                    os.remove(torrent)
+#
+#        else:
+#            print("Directory " + d + " is not in the config.")

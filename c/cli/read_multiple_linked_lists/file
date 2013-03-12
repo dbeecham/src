@@ -1,0 +1,12 @@
+5
+living_room .2
+dining_room .9
+hall .1
+kitchen .2
+computer_room .3
+5
+living_room hall 5
+hall kitchen 2
+computer_room hall 5
+computer_room kitchen 9
+dining_room kitchen 1

@@ -1,0 +1,261 @@
+#!/usr/bin/python
+
+# Guil: http://eu.wowarmory.com/guild-info.xml?r=Frostmane&gn=Entropy&rhtml=n
+# User: http://eu.wowarmory.com/character-sheet.xml?r=Frostmane&n=Varya&rhtml=n
+# Item: http://eu.wowarmory.com/item-info.xml?i=51922
+# RSS:  http://eu.wowarmory.com/character-feed.atom?r=Frostmane&cn=Varya&filters=ACHIEVEMENT,CRITERIA,BOSSKILL,RESPEC&locale=en_US
+
+from xml.dom import minidom;
+import urllib;
+from pyPgSQL import libpq;
+import time;
+from re import escape;
+import sys;
+
+
+def queryHandler(sqlhandle, query):
+	return sqlhandle.query(query);
+
+if __name__ == "__main__":
+
+	# Connect to database.
+	sql = libpq.PQconnectdb("dbname=entropy_armory user=zhaozhou
+                         password=pass");
+
+	# Get Guild Info.
+	guildinfo = minidom.parse(urllib.urlopen("http://eu.wowarmory.com/guild-info.xml?r=Frostmane&gn=Entropy&rhtml=n"));
+
+	# Extract common used nodes for easier access.
+	guildheader = guildinfo.getElementsByTagName("guildHeader")[0];
+	members = guildinfo.getElementsByTagName("members")[0];
+
+
+	# {{{ General guild info.
+	# -----------------------
+
+	queryHandler(sql, "update guild_info set name = '" + guildheader.getAttribute("name") + "'");
+	queryHandler(sql, "update guild_info set faction = '" + guildheader.getAttribute("faction") + "'");
+	queryHandler(sql, "update guild_info set battlegroup = '" + guildheader.getAttribute("battleGroup") + "'");
+	queryHandler(sql, "update guild_info set realm = '" + guildheader.getAttribute("realm") + "'");
+	queryHandler(sql, "update guild_info set member_count = '" + members.getAttribute("memberCount") + "'");
+
+	# -----------------------
+	# }}}
+
+
+	# {{{ Character specific info.
+	# -----------------------
+
+	child = members.firstChild;
+	while child: # Iterate to the end.
+		if child.toxml().strip() != "": # No empty nodes.
+
+			# Select the ID of user currently selected.
+			q = queryHandler(sql, "select id from characters where name = '" + child.getAttribute("name").encode("utf8") +"'");
+
+			if q.ntuples == 0:
+				# Creating character.
+				queryHandler(sql, "insert into characters (name) values ('" + child.getAttribute("name").encode("utf8") + "')");
+
+				# And get the ID.
+				q = queryHandler(sql, "select id from characters where name = '" + child.getAttribute("name").encode("utf8") +"'");
+
+			print child.getAttribute("name");
+
+			id = q.getvalue(0, 0);
+			
+			# Sleep, we don't want to overuse the armory. It'll ban us.
+			time.sleep(2);
+
+			# Get the character info.
+			char = minidom.parse(urllib.urlopen("http://eu.wowarmory.com/character-sheet.xml?" + child.getAttribute("url") + "&rhtml=n"));
+
+
+			# UGLY {{{
+			queryHandler(sql, "update characters set rank = '" + child.getAttribute("rank") + "' where id = '" + str(id) + "'");
+
+			# Character info. Won't fail, no try-catch.
+			character = char.getElementsByTagName("character")[0];
+			queryHandler(sql, "update characters set suffix = '" + character.getAttribute("suffix") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set prefix = '" + character.getAttribute("prefix") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set classid = '" + character.getAttribute("classId") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set gender = '" + character.getAttribute("genderId") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set race = '" + character.getAttribute("raceId") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set achievementpoints = '" + character.getAttribute("points") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set level = '" + character.getAttribute("level") + "' where id = '" + str(id) + "'");
+
+			# Talents.
+			try:
+				talents = char.getElementsByTagName("talentSpec");
+				queryHandler(sql, "update characters set talent_one = '" + talents[0].getAttribute("prim") + "' where id = '" + str(id) + "'");
+				queryHandler(sql, "update characters set talent_one_tree_one = '" + talents[0].getAttribute("treeOne") + "' where id = '" + str(id) + "'");
+				queryHandler(sql, "update characters set talent_one_tree_two = '" + talents[0].getAttribute("treeTwo") + "' where id = '" + str(id) + "'");
+				queryHandler(sql, "update characters set talent_one_tree_three = '" + talents[0].getAttribute("treeThree") + "' where id = '" + str(id) + "'");
+
+				if talents[0].getAttribute("active") == "1":
+					queryHandler(sql, "update characters set talent_one_active = true where id = '" + str(id) + "'");
+					queryHandler(sql, "update characters set talent_two_active = false where id = '" + str(id) + "'");
+				else:
+					queryHandler(sql, "update characters set talent_one_active = false where id = '" + str(id) + "'");
+					queryHandler(sql, "update characters set talent_two_active = true where id = '" + str(id) + "'");
+
+				queryHandler(sql, "update characters set talent_two = '" + talents[1].getAttribute("prim") + "' where id = '" + str(id) + "'");
+				queryHandler(sql, "update characters set talent_two_tree_one = '" + talents[1].getAttribute("treeOne") + "' where id = '" + str(id) + "'");
+				queryHandler(sql, "update characters set talent_two_tree_two = '" + talents[1].getAttribute("treeTwo") + "' where id = '" + str(id) + "'");
+				queryHandler(sql, "update characters set talent_two_tree_three = '" + talents[1].getAttribute("treeThree") + "' where id = '" + str(id) + "'");
+			except IndexError:
+				pass
+
+			# Professions
+			number = ["one", "two", "three", "four", "five"];
+
+			try:
+				primary_profession = char.getElementsByTagName("professions")[0];
+				prof = primary_profession.firstChild;
+
+				i = 0;
+
+				while prof:
+					if prof.toxml().strip() == "":
+						prof = prof.nextSibling;
+						continue;
+					if prof.getAttribute("name") == "Survival":
+						continue;
+
+					queryHandler(sql, "update characters set primary_profession_"+number[i]+" = '" + prof.getAttribute("name") + "' where id = '" + str(id) + "'");
+					queryHandler(sql, "update characters set primary_profession_"+number[i]+"_max_skill = '" + prof.getAttribute("max") + "' where id = '" + str(id) + "'");
+					queryHandler(sql, "update characters set primary_profession_"+number[i]+"_skill = '" + prof.getAttribute("value") + "' where id = '" + str(id) + "'");
+					prof = prof.nextSibling
+
+					i = i+1;
+
+					if i == 5:
+						break;
+
+			except:
+				print sys.exc_info()
+
+			try:
+				secondary_profession = char.getElementsByTagName("secondaryProfessions")[0];
+				prof = secondary_profession.firstChild;
+
+				i = 0;
+
+				while prof:
+					if prof.toxml().strip() == "":
+						prof = prof.nextSibling;
+						continue;
+
+					queryHandler(sql, "update characters set secondary_profession_"+number[i]+" = '" + prof.getAttribute("name") + "' where id = '" + str(id) + "'");
+					queryHandler(sql, "update characters set secondary_profession_"+number[i]+"_max_skill = '" + prof.getAttribute("max") + "' where id = '" + str(id) + "'");
+					queryHandler(sql, "update characters set secondary_profession_"+number[i]+"_skill = '" + prof.getAttribute("value") + "' where id = '" + str(id) + "'");
+					prof = prof.nextSibling
+
+					i = i+1;
+
+					if i == 5:
+						break;
+
+			except:
+				print sys.exc_info()
+			secondary_profession = char.getElementsByTagName("secondaryProfessions");
+
+			# Health. Won't fail, no try-catch.
+			health = char.getElementsByTagName("health")[0];
+			queryHandler(sql, "update characters set health = '" + health.getAttribute("effective") + "' where id = '" + str(id) + "'");
+
+			# Power. Won't fail, no try-catch.
+			power = char.getElementsByTagName("secondBar")[0];
+			queryHandler(sql, "update characters set power = '" + power.getAttribute("effective") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set power_type = '" + power.getAttribute("type") + "' where id = '" + str(id) + "'");
+
+			# Melee info.
+			melee = char.getElementsByTagName("melee")[0];
+			queryHandler(sql, "update characters set melee_power = '" + melee.getElementsByTagName("power")[0].getAttribute("effective") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set melee_hitrating = '" + melee.getElementsByTagName("hitRating")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set melee_hitrating_percent = '" + melee.getElementsByTagName("hitRating")[0].getAttribute("increasedHitPercent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set melee_critrating = '" + melee.getElementsByTagName("critChance")[0].getAttribute("rating") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set melee_critrating_percent = '" + melee.getElementsByTagName("critChance")[0].getAttribute("percent") + "' where id = '" + str(id) + "'");
+
+
+			spell = char.getElementsByTagName("spell")[0];
+			queryHandler(sql, "update characters set spell_arcane_spellpower = '" + spell.getElementsByTagName("arcane")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_fire_spellpower = '" + spell.getElementsByTagName("fire")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_frost_spellpower = '" + spell.getElementsByTagName("frost")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_holy_spellpower = '" + spell.getElementsByTagName("holy")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_nature_spellpower = '" + spell.getElementsByTagName("nature")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_shadow_spellpower = '" + spell.getElementsByTagName("shadow")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_hasterating = '" + spell.getElementsByTagName("hasteRating")[0].getAttribute("hasteRating") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_hasterating_percent = '" + spell.getElementsByTagName("hasteRating")[0].getAttribute("hastePercent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_hitrating = '" + spell.getElementsByTagName("hitRating")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_hitrating_percent = '" + spell.getElementsByTagName("hitRating")[0].getAttribute("increasedHitPercent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_healing_spellpower = '" + spell.getElementsByTagName("bonusHealing")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_arcane_critrating_percent = '" + spell.getElementsByTagName("arcane")[1].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_fire_critrating_percent = '" + spell.getElementsByTagName("fire")[1].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_frost_critrating_percent = '" + spell.getElementsByTagName("frost")[1].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_holy_critrating_percent = '" + spell.getElementsByTagName("holy")[1].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_nature_critrating_percent = '" + spell.getElementsByTagName("nature")[1].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_shadow_critrating_percent = '" + spell.getElementsByTagName("shadow")[1].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set spell_critrating = '" + spell.getElementsByTagName("critChance")[0].getAttribute("rating") + "' where id = '" + str(id) + "'");
+
+			# Ranged info.
+			ranged = char.getElementsByTagName("ranged")[0];
+			queryHandler(sql, "update characters set ranged_power = '" + ranged.getElementsByTagName("power")[0].getAttribute("effective") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set ranged_hitrating = '" + ranged.getElementsByTagName("hitRating")[0].getAttribute("value") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set ranged_hitrating_percent = '" + ranged.getElementsByTagName("hitRating")[0].getAttribute("increasedHitPercent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set ranged_critchance = '" + ranged.getElementsByTagName("critChance")[0].getAttribute("rating") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set ranged_critchance_percent = '" + ranged.getElementsByTagName("critChance")[0].getAttribute("percent") + "' where id = '" + str(id) + "'");
+
+			# Defense info.
+			defenses = char.getElementsByTagName("defenses")[0];
+			queryHandler(sql, "update characters set armor = '" + defenses.getElementsByTagName("armor")[0].getAttribute("effective") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set armor_percent = '" + defenses.getElementsByTagName("armor")[0].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set dodge = '" + defenses.getElementsByTagName("dodge")[0].getAttribute("rating") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set dodge_percent = '" + defenses.getElementsByTagName("dodge")[0].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set parry = '" + defenses.getElementsByTagName("parry")[0].getAttribute("rating") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set parry_percent = '" + defenses.getElementsByTagName("parry")[0].getAttribute("percent") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set block = '" + defenses.getElementsByTagName("block")[0].getAttribute("rating") + "' where id = '" + str(id) + "'");
+			queryHandler(sql, "update characters set block_percent = '" + defenses.getElementsByTagName("block")[0].getAttribute("percent") + "' where id = '" + str(id) + "'");
+
+			# Items.
+			slots = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0, 13:0, 14:0, 15:0, 16:0}
+
+			items = char.getElementsByTagName("item");
+			for i in items:
+				if i.getAttribute("slot") == "-1":
+					continue
+				slots[int(i.getAttribute("slot"))] = 1;
+
+				itemresult = sql.query("select count(id) from items where id = '" + i.getAttribute("id") + "'");
+				if itemresult.getvalue(0, 0) == 0:
+					# We need to add this item, it's not in our database.
+					print "Updating item: " + i.getAttribute("id");
+					time.sleep(2)
+					item = minidom.parse(urllib.urlopen("http://eu.wowarmory.com/item-info.xml?i=" + i.getAttribute("id") + "&rhtml=n"));
+
+					iteminfo = item.getElementsByTagName("item")[0];
+
+					queryHandler(sql, "insert into items (id, ilevel, name, quality, type) values ("+iteminfo.getAttribute("id")+", "+iteminfo.getAttribute("level")+", '"+escape(iteminfo.getAttribute("name"))+"', "+iteminfo.getAttribute("quality")+", '"+iteminfo.getAttribute("type")+"')");
+
+
+				queryHandler(sql, "update characters set item" + i.getAttribute("slot") + " = '"+i.getAttribute("id")+"' where id = '"+str(id)+"'");
+
+			for a, b in slots.iteritems():
+				if b == 0:
+					queryHandler(sql, "update characters set item" + str(a) + " = NULL where id = '"+str(id)+"'");
+
+			queryHandler(sql, "update characters set lastupdated = now() where id = '" + str(id) + "'");
+			# }}}
+
+
+		child = child.nextSibling;
+
+	# -----------------------
+	# }}}
+
+
+	# Clear off old character posts.
+	queryHandler(sql, "DELETE FROM characters where age(now(), lastupdated) > interval '30 minutes';");
+
+	# Close off the SQL server before we go.
+	sql.finish();

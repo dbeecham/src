@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+from socket import *
+import commands
+
+sock = socket()
+sock.bind(("", 10101))
+sock.listen(2)
+
+alive = 1
+while alive:
+	conn, addr = sock.accept()
+	data = conn.recv(1024)
+
+	if len(data) == 9 and data[0:8] == "pass": 
+		conn.close()
+		commands.getoutput("mplayer -quiet /home/zhaozhou/warning.wav")
+	else:
+		conn.close()
+

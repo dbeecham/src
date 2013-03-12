@@ -1,0 +1,111 @@
+#!/bin/sh
+
+print_help() {
+    echo "usage: $0 [add|search|del|provides|owns|sync|update] <string>"
+    exit
+}
+
+check_arguments() {
+    # These options require $2.
+    if test "$1" = "add" -o \
+            "$1" = "search" -o \
+            "$1" = "del" -o \
+            "$1" = "provides" -o \
+            "$1" = "owns"; then
+
+        # I have no idea why I cannot consolidate this. I should be able to.
+        if test -n "$2"; then
+            return
+        fi
+    fi
+
+    # These options doesn't take a $2.
+    if test "$1" = "sync" -o \
+            "$1" = "update"; then
+        if test -z "$2"; then
+            return
+        fi
+    fi
+
+    # Either user passed $2 when he shouldn't have, he didn't pass $2
+    # when he should have, or he provided an action which isn't available.
+    print_help
+
+}
+
+couldnt() {
+    echo "Couldn't find a way to '$1'.";
+    exit
+}
+
+target() {
+    echo -n "PKGMAN_"
+    echo -n $1 | tr "abcdefghijklmnopqrstuvxyz" "ABCDEFGHIJKLMNOPQRSTUVXYZ"
+}
+
+main() {
+    check_arguments $@
+
+
+    PKGMAN_ADD=""
+    PKGMAN_SEARCH=""
+    PKGMAN_DEL=""
+    PKGMAN_PROVIDES=""
+    PKGMAN_OWNS=""
+    PKGMAN_SYNC=""
+    PKGMAN_UPDATE=""
+
+    if test -e /etc/arch-release; then
+        # Going to try packer, pacman-color, pacman, pkgfile.
+        if test -x /usr/bin/pacman; then
+            PKGMAN_ADD="/usr/bin/pacman -S $2"
+            PKGMAN_SEARCH="/usr/bin/pacman -Ss $2"
+            PKGMAN_DEL="/usr/bin/pacman -Rsu $2"
+            PKGMAN_OWNS="/usr/bin/pacman -Qo $2"
+            PKGMAN_SYNC="/usr/bin/pacman -Sy"
+            PKGMAN_UPDATE="/usr/bin/pacman -Su"
+        fi
+
+        if test -x /usr/bin/pacman-color; then
+            PKGMAN_ADD="/usr/bin/pacman-color -S $2"
+            PKGMAN_SEARCH="/usr/bin/pacman-color -Ss $2"
+            PKGMAN_DEL="/usr/bin/pacman-color -Rsu $2"
+            PKGMAN_OWNS="/usr/bin/pacman-color -Qo $2"
+            PKGMAN_SYNC="/usr/bin/pacman-color -Sy"
+            PKGMAN_UPDATE="/usr/bin/pacman-color -Su"
+        fi
+
+        if test -x /usr/bin/packer; then
+            PKGMAN_ADD="/usr/bin/packer -S $2"
+            PKGMAN_SEARCH="/usr/bin/packer -Ss $2"
+            PKGMAN_UPDATE="/usr/bin/packer -Syu"
+        fi
+
+        if test -x /usr/bin/pkgfile; then
+            PKGMAN_PROVIDES="/usr/bin/pkgfile $2"
+        fi
+
+    elif test -e /etc/alpine-release; then
+        # Going to try apk.
+        echo "There is no support for Alpine Linux just yet. It'll be here soon!"
+        exit
+    elif test -e /etc/gentoo-release; then
+        # Going to try q, eix, emerge.
+        echo "There is no support for Gentoo Linux just yet. It'll be here soon!"
+        exit
+    else
+        echo "Could not identify your distribution, or your package manager."
+        exit
+    fi
+
+    TARGET=$(target $1)
+    if test -n "${!TARGET}"; then
+        ${!TARGET}
+        return
+    else
+        couldnt $1
+    fi
+
+}
+
+main $@

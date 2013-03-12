@@ -1,0 +1,12 @@
+#!/usr/bin/python
+
+from socket import *
+
+
+try:
+	sock = socket()
+	sock.connect(("127.0.0.1", 10101))
+	sock.send("pass\n")
+	sock.close()
+except:
+	pass
