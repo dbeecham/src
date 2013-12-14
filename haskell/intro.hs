@@ -141,6 +141,51 @@ tail [] -- error
 -- etc
 
 
+-- Types:
+-- 	Int:
+--		Integer. -2147483648 to 2147483648
+--	Integer:
+--		Integer. Huge integers. Less efficient then int.
+--	Float:
+--		Floating point, single precision.
+--	Double:
+--		Floating point, double precision.
+--	Bool:
+--		Bool. True or False.
+--	Char:
+--		Character.
+
+-- Type Classes:
+-- An interface?
+--	Eq:
+--		Equality testing.
+--	Ord:
+--		Ordering.
+--		'compare' -> (LT, EQ, GT)
+--	Show:
+--		Can be presented as strings.
+--	Read:
+--		Can be read from a string.
+--	Enum:
+--		Sequentially ordered.
+--	Bounded:
+--		Has an upper and a lower bound.
+--	Num: 
+--		Numerisk;
+--		Int, Integer, Float, Double
+--	Integral: 
+--		Int, Integer
+--	Floating:
+--		Float, Double.
+
+-- Type specification:
+lucky :: Int -> [Char]
+lucky x = "hej"
+
+-- Pattern Matching
+lucky 1 = "NOT A VALID VALUE!"
+lucky x = x*x
+
 
 -- Defining a data type -- must start with a capital letter
 --          value constructor
