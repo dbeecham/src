@@ -12,6 +12,4 @@
       ((zero? n) (quote ()))
       (#t (cons n (range (- n 1)))))))
 
-(let
-  ((n (range (read-line))))
-  (print (sum (range (char->integer n)))))
+(print (reduce + (range (string->number (read-line)))))
