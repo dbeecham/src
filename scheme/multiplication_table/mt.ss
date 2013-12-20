@@ -1,9 +1,5 @@
 (use extras)
 
-(define read-line-with-message
-  (lambda [message]
-    (begin (print message) (read-line))))
-
 (define reduce
   (lambda [f xs]
     (cond
@@ -24,8 +20,17 @@
 
 (define range (partial range-from 1))
 
-(define zip
-  (lambda xs
-    (apply map list xs)))
+(define reverse-f
+  (lambda [f . args]
+    (partial f (reverse args))))
 
-(print (zip (range 10) (range 10)))
+(define cartesian-product-single
+  (lambda [x xs]
+    (cond
+      [(null? xs) xs]
+      [#t (cons (list x (car xs)) (cartesian-product-single x (cdr xs)))])))
+
+(define cartesian-product
+  (lambda [xs ys]
+    (map (lambda [x] (cartesian-product-single x ys)) xs)))
+
