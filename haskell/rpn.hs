@@ -1,0 +1,10 @@
+solveRPN :: (Floating a, Read a) => String -> a
+solveRPN = head . foldl foldFunc [] . words
+    where foldFunc (x:y:xs) "*" = (x * y):xs
+          foldFunc (x:y:xs) "+" = (x + y):xs
+          foldFunc (x:y:xs) "-" = (x - y):xs
+          foldFunc (x:y:xs) "/" = (x / y):xs
+          foldFunc (x:y:xs) "^" = (x ** y):xs
+          foldFunc (x:xs) "ln" = (log x):xs
+          foldFunc xs "sum" = [sum xs]
+          foldFunc xs numStr = (read numStr):xs
