@@ -1,4 +1,5 @@
 import Data.Char -- toUpper
 
-main = contents <- getContents
+main = do
+    contents <- getContents
     putStr $ map toUpper contents
