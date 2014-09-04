@@ -1,0 +1,5 @@
+function o = do(varargin)
+    for f = varargin
+        o = f();
+    end
+end
