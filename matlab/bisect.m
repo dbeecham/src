@@ -1,15 +1,13 @@
-function o = bisect(f, a, b, tol, nmax)
+function o = bisect(f, a, b, e, nmax)
 
-    % xnor truth table:
-    %  a  |  b  |  o
-    %-----+-----+-----
-    %  0  |  0  |  1
-    %  0  |  1  |  0
-    %  1  |  0  |  0
-    %  1  |  1  |  1
-    %-----+-----+-----
-    function o = xnor(a, b)
-        o = not(xor(a, b));
+    function b = sign(x)
+        if (x > 0)
+            b = 1;
+        elseif (x < 0)
+            b = -1;
+        else
+            b = 0;
+        end
     end
 
 
@@ -19,18 +17,19 @@ function o = bisect(f, a, b, tol, nmax)
         c = (a + b)/2;
         
         % Is within range.
-        if f(c) == 0 || (b - a)/2 < tol
+        % if abs(f(c)) < e
+        if f(c) == 0 || (b - a)/2 < e
             o = c;
             return;
         end
         
-        if xnor(f(c) < 0, f(a) < 0)
+        if sign(f(c)) == sign(f(a))
             a = c;
         else
             b = c;
         end
     end
     
-    error('no');
+    error('Could not find a value ');
     
 end
