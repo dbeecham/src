@@ -9,7 +9,7 @@ function c = newton_rapson(f, g, guess, e, max_iter)
     for n=1:max_iter
         b = a - (f(a) / g(a));
         
-        if abs(b) <= e
+        if abs(a - b) <= e
             c = b;
             return;
         end

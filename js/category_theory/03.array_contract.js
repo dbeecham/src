@@ -1,4 +1,5 @@
-var type = function(type) {
+// Contract (object)generator.
+var typeOf = function(type) {
     if (typeof type !== "string") {
         throw new TypeError("Expected a string!");
     } 
@@ -22,10 +23,9 @@ var type = function(type) {
     };
 };
 
-var bool = type("boolean");
-var obj = type("object");
-var num = type("number");
-var undef = type("undefined");
-var arr = type("array");
-
-arr(1);
+var bool = typeOf("boolean");
+var fun = typeOf("function");
+var obj = typeOf("object");
+var num = typeOf("number");
+var undef = typeOf("undefined");
+var arr = typeOf("array");

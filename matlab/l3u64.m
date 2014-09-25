@@ -1,4 +1,8 @@
 function [] = l3u64()
+    function o = extractDigits(x, n)
+        o = floor(x * 10^(n-1));
+    end
+
     piappr = piapprox();
 
     fst_found = 0;

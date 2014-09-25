@@ -1,4 +1,6 @@
-var type = function(type) {
+// A contract generator. Contracts, in category theory, are called
+// 'objects'.
+var typeOf = function(type) {
     if (typeof type !== "string") {
         throw new TypeError("Expected a string!");
     } 
@@ -13,27 +15,36 @@ var type = function(type) {
     };
 };
 
-var bool = type("boolean");
-var obj = type("object");
-var num = type("number");
-var undef = type("undefined");
+var str = typeOf("string");
+var bool = typeOf("boolean");
+var obj = typeOf("object");
+var num = typeOf("number");
+var fun = typeOf("function");
+var undef = typeOf("undefined");
 
+// Once we have contracts (above), we can write functions that use
+// them:
 
-// guarded functions input and output needs to pass a contract
-
-
-
-// Guarded function ("morphisms")
+// repeat :: str -> str
 var repeat = function(s) {
     s = str(s);
-    return s + s;
+    return str(s + s);
 };
 
-
-// Another guarded function (morphism)
+// int :: num -> num
 var inc = function(x) {
     x = num(x);
     return num(x + 1);
 };
 
-// A contract and a guarded function form a category.
+// A function that has a contract on the input or the output
+// a *guarded function*, which are called 'morphisms' in
+// category theory.
+
+// Consider the following contract:
+var any = function(s) { return s; }
+
+// Is is thus possible to think of all functions as guarded functions,
+// guarded by the any contract.
+
+// Contracts and the functions they guard form a *category*.

@@ -1,3 +1,4 @@
+// Contract (object) generator.
 var type = function(type) {
     if (typeof type !== "string") {
         throw new TypeError("Expected a string!");

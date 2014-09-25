@@ -17,8 +17,8 @@ function o = bisect(f, a, b, e, nmax)
         c = (a + b)/2;
         
         % Is within range.
-        % if abs(f(c)) < e
-        if f(c) == 0 || (b - a)/2 < e
+        if abs(f(c)) < e
+        %if f(c) == 0 || (b - a)/2 < e
             o = c;
             return;
         end
