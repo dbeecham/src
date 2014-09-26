@@ -1,8 +1,8 @@
 function [] = l2u5()
-    maxy = 0;
-    maxx = 0;
-    for x=1:100
-        if cos(x) > max
+    maxy = cos(1);
+    maxx = 1;
+    for x=2:100
+        if cos(x) > maxy
             maxy = cos(x);
             maxx = x;
         end

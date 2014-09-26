@@ -14,12 +14,12 @@ function [] = l3u64()
     %parfeval(p, @parplot, 0);
 
     while true
-        s = num2str(piappr());
+        p = piappr();
 
         % I dont care about divide by 0 errors.
         try
 
-            if strcmp(s(1:3), '3.1')
+            if extractDigits(p, 2) == 31
                 if fst_found == 0
                     fprintf('Found first digit at N = %i.\n', i);
                     fst_found = 1;
@@ -31,7 +31,7 @@ function [] = l3u64()
                 end
             end
 
-            if strcmp(s(1:4), '3.14')
+            if extractDigits(p, 3) == 314
                 if snd_found == 0
                     fprintf('Found second digit at N = %i.\n', i);
                     snd_found = 1;
@@ -43,7 +43,7 @@ function [] = l3u64()
                 end
             end
 
-            if strcmp(s(1:5), '3.141')
+            if extractDigits(p, 4) == 3141
                 if thr_found == 0
                     fprintf('Found third digit at N = %i.\n', i);
                     thr_found = 1;

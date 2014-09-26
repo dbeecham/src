@@ -9,26 +9,6 @@ function [] = l2u6()
         hold off
     end
 
-    % An attempt at abstracting trail behaviour.
-    % Apparently cellfun cannot return a list of functions.
-    function f = remtail(size, order, preserve_order, F)
-        if nargin < 3
-            preserve_order = 0;
-        end
-        
-        values = arrayfun(@(x) F(), 1:size);
-        cur_index = 1;
-        
-        function P = func()
-            if preserve_order
-            else
-                values(cur_index:(cur_index+order)) = F();
-                cur_index = mod(cur_index + 1 + order, size * order) + 1;
-            end
-        end
-        f = @func;
-    end
-
     % A cell structure with balls.
     balls = {
         bouncy_ball([0.1, 0.1], [0.01, -0.01], [0, 1])

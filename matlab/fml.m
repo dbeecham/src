@@ -8,7 +8,7 @@ function [first, middle, last] = fml(xs)
     last = xs(end);
     
     if evenn(length(xs))
-        middle = xs(end/2) * xs((end/2) + 1) / 2;
+        middle = (xs(end/2) + xs((end/2) + 1)) / 2;
     else
         middle = xs(ceil(end/2));
     end
