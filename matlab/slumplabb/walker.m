@@ -1,15 +1,19 @@
-function F = walker(pos, f)
-    % walker :: position -> (position -> position) -> IO position
-    % A walker takes a random step and returns it's new position.
-    % It takes an initial position and a step function and relies
-    % on clojure and side-effects to update it's position on each
-    % call, and thus this functions sort of like a class.
-    % This walker is an n-dimensional walker where pos is an
-    % n-dimensional position vector, f takes an n-dimensional vector
-    % and returns an n-dimensional vector.
+function F = walker(varargin)
+% walker takes an initial position and a stepper function and returns a
+% function which takes a step and returns it's new position. If initial
+% position is not specified, an inital position of 0 is assumed.
+    
+    if nargin > 1
+        p = varargin{1};
+        f = varargin{2};
+    else
+        p = 0;
+        f = varargin{1};
+    end
+        
     function P = func()
-        pos = f(pos);
-        P = pos;
+        p = f(p);
+        P = p;
     end
     F = @func;
 end

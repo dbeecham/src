@@ -3,7 +3,7 @@ function [] = slumplabb3()
     % Analysera hur långt en vandring med N steg typiskt tar sig från
     % startpunkten.
     
-    N = 100; % Number of steps per walk
+    N = 500; % Number of steps per walk
     step = 10; % Do math on n*step steps.
     hm = figure(1);
     
@@ -16,9 +16,12 @@ function [] = slumplabb3()
     
     while 1
         cla(hw);
-        w = walker(0, randDiscreteStepper({-1, 1}));
-        w = wplot2d(w, hw, 1, [0, 0, 0], '.');
-        w = 
+        w = amalgamate(2, walker(linstep()), walker(0, rndstepi({-1, 1})));
+        w = wscatter(w, 1, hw, 1, [0, 0, 0], '.');
+        d = replicate(w, 100);
+        d = d(2:2:end);
+        visited = [visited, d];
+        hist(visited);
         pause(0.1);
     end
     % Move step with walker, plot step, for each 100

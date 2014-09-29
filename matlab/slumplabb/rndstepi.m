@@ -1,4 +1,4 @@
-function F = randDiscreteStepper(steps)
+function F = rndstepi(steps)
     % This is a stepper (position -> position) which randomly picks
     % on every step picks a random element from steps.
     % Notice that steps is a cell structure of array elements ({[]}).

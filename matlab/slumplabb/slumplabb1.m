@@ -5,7 +5,7 @@ function [] = slumplabb1()
     % med ett givet antal steg, N.
 
     N = 100;
-    w = walker(0, randDiscreteStepper({-1, 1}));
+    w = walker(rndstepi({-1, 1}));
     xs = replicate(w, N)
         
 end
