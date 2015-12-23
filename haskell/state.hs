@@ -1,52 +1,87 @@
-import Control.Applicative
-import Control.Monad 
-import Data.Monoid
-import Data.Foldable as F
+-- The state monad transformer is great for
+-- keeping track of a state which can change during
+-- a computation. It's sort of a combination of the reader
+-- monad and the writer monad; it's a computation which
+-- depend on the enviromnent it's run on (the state),
+-- and it produces an "extra value" (the next state).
+-- This file uses a cli as an example.
 
-sequenceA :: (Applicative f) => [f a] -> f [a]
-sequenceA = F.foldr (liftA2 (:)) (pure [])
+import Control.Monad.State
+import System.IO
 
-data Tree a = Value a | Branch (Tree a) (Tree a) | Empty deriving Show
+-- MyState is the state which the state transformer
+-- "hides". The state type can be any type.
+data MyState = MyState { avalue :: Int
+                       , alist :: [Int]
+                       , astring :: String
+                       }
 
-t, v, e :: Tree Int
-t = Branch (Value 3) (Branch (Branch (Value 1) (Value 4)) (Branch (Value 3) Empty))
-v = Branch Empty (Branch (Branch Empty (Value 2)) (Branch (Value 3) Empty))
-e = Empty
+-- We need an initial state
+initialState :: MyState
+initialState = MyState { avalue = 3
+                       , alist = [0, 2, 4]
+                       , astring = "Hello, world."
+                       }
 
-instance Monoid (Tree a) where
-    mempty = Empty
-    mappend Empty t = t
-    mappend t Empty = t
-    mappend a b = Branch a b
+-- As an illustration, let's create a CLI.
+-- The CLI is a sort of loop; it reads a command,
+-- parses it, runs some function depending on the
+-- command, and loops (unless command is 'quit').
+loop :: StateT MyState IO ()
+loop = do
+    lift $ putStr "> "
+    lift $ hFlush stdout
+    input <- lift getLine
+    perform input
 
-instance Foldable Tree where
-    foldMap f Empty = mempty
-    foldMap f (Value a) = f a
-    foldMap f (Branch a b) = mappend (F.foldMap f a) (F.foldMap f b)
+perform :: String -> StateT MyState IO ()
 
-newtype State a = State { getState :: (Int, a) }
+-- Quit the cli. Does not call loop.
+perform "quit" = do
+    return ()
 
-type Birds = Int
-type Pole = (Birds, Birds)
+perform "help" = do
+    lift $ putStrLn "Avaliable commands are:"
+    lift $ putStrLn "quit, help, avalue, alist, astring, inc, add"
+    loop
 
-landLeft :: Birds -> Pole -> Maybe Pole
-landLeft n (left, right)
-    | (left + n) - right < 4 = Just (left + n, right)
-    | otherwise = Nothing
+perform "avalue" = do
+    -- Store the current state in a
+    a <- get
+    -- Print out 'avalue' in state
+    lift $ putStrLn $ "avalue is " ++ (show (avalue a))
+    -- then loop
+    loop
 
-landRight :: Birds -> Pole -> Maybe Pole
-landRight n (left, right)
-    | (right + n) - left < 4 = Just (left, right + n)
-    | otherwise = Nothing
+perform "alist" = do
+    a <- get
+    lift $ putStrLn $ "alist is " ++ (show (alist a))
+    loop
+
+perform "astring" = do
+    a <- get
+    lift $ putStrLn $ "astring is " ++ (astring a)
+    loop
+
+perform "inc" = do
+    a <- get
+    -- Store a modified state using put.
+    put $ a { avalue = (avalue a) + 1}
+    loop
+
+perform "add" = do
+    a <- get
+    put $ a { alist = 0 : (alist a)}
+    loop
+
+perform _ = loop
 
 
---step = \x -> [x+1, x-1] >>= (\x -> guard (x >= 0) >> return x)
-step x = [x+1, x-1]
-nonegatives = filter (> 0)
-walk = [0] >>= (Prelude.foldr (>=>) return (replicate 20 step))
-walkstat = nonegatives walk
-
-
-
---myreplicate :: (Monad m) => m a -> (a -> m b) -> m b
---myreplicate 
+main :: IO ()
+main = do
+    -- Run state monad transformer 'loop' with
+    -- initial state 'initialState'. Return a tuple
+    -- where first value is return value, and s is
+    -- state.
+    (r, s) <- runStateT loop initialState
+    return r
