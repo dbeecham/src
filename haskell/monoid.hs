@@ -9,6 +9,8 @@ import Data.Monoid
 -- Associativity:
 -- ((a, b) <> (c, d)) <> (e, f) = (a + c, b * d) <> (e, f) = (a + c + e, b * d * f)
 -- (a, b) <> ((c, d) <> (e, f)) = (a, b) <> (c + e, d * f) = (a + c + e, b * d * f)
+-- This structure is in fact the product of two monoids, the addition monoid
+-- and the multiplication monoid, Add x Mul.
 
 data MyMonoid = MyMonoid Int Int
 
