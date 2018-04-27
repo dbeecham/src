@@ -1,19 +1,69 @@
+#include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <netinet/in.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <err.h>
 
-int main(int argc, char **argv) {
-	int sock, newsock;
-	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) return 2;
+#define HOST "localhost"
+#define PORT "7794"
+#define BACKLOG 64
+#define BUFLEN 128
 
-	struct sockaddr_in addr;
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_port = htons(10102);
+#define STR_CONNECT_FAILED "connect failed"
 
-	if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) return 3;
+int main(int argc, char *argv[])
+{
+    struct sockaddr_storage their_addr;
+    socklen_t sin_size;
+    struct addrinfo hints = {
+        .ai_family = AF_UNSPEC,
+        .ai_socktype = SOCK_STREAM
+    };
+    struct addrinfo *servinfo, *p;
+    int sockfd;
+    int client_fd;
+    char buf[BUFLEN];
+    ssize_t bytes_read;
 
-	if (send(sock, "hi", 2, 0) < 2) return 4;
+    int ret = getaddrinfo(HOST, PORT, &hints, &servinfo);
+    if (0 != ret) {
+        /* Failed to get address information. Print an error message,
+         * sleep for an hour and then try again. */
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ret));
+        exit(EXIT_FAILURE);
+    }
 
-	return 0;
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (-1 == sockfd) {
+            warn("socket");
+            continue;
+        }
+
+        if (-1 == connect(sockfd, p->ai_addr, p->ai_addrlen)) {
+            close(sockfd);
+            warn("connect");
+            continue;
+        }
+    
+        break;
+    }
+    freeaddrinfo(servinfo);
+
+    if (NULL == p) {
+        write(STDERR_FILENO, STR_CONNECT_FAILED, strlen(STR_CONNECT_FAILED));
+        exit(EXIT_FAILURE);
+    }
+
+    if (-1 == write(sockfd, "hello\n", 6)) {
+        close(sockfd);
+        err(EXIT_FAILURE, "write");
+    }
+    close(sockfd);
+
+    exit(EXIT_SUCCESS);
 }
