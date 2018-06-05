@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 201805L
+
 #include <pthread.h>
 #include <unistd.h>
 #include <stdlib.h>
