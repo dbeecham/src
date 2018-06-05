@@ -1,9 +1,12 @@
 #include <pthread.h>
-#include <err.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/signal.h>
 #include <sys/epoll.h>
+#include <syslog.h>
+#include <errno.h>
+#include <string.h>
+
 
 struct app {
     sigset_t sigset;
@@ -14,39 +17,41 @@ struct app {
 
 
 // This could be in some application-specific file.
-void app_signals_block(struct app * app)
+int app_signals_block(struct app * app)
 {
     int ret;
 
     ret = sigemptyset(&app->sigset);
     if (-1 == ret) {
-        warn("sigemptyset");
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: sigemptyset: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
 
     ret = sigaddset(&app->sigset, SIGPIPE);
     if (-1 == ret) {
-        warn("sigaddset");
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: sigaddset: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
 
     ret = sigaddset(&app->sigset, SIGTERM);
     if (-1 == ret) {
-        warn("sigaddset");
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: sigaddset: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
 
     ret = sigaddset(&app->sigset, SIGINT);
     if (-1 == ret) {
-        warn("sigaddset");
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: sigaddset: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
 
     ret = sigprocmask(SIG_BLOCK, &app->sigset, NULL);
     if (-1 == ret) {
-        warn("sigprocmask");
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: sigprocmask: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
+
+    return 0;
 }
 
 
@@ -56,20 +61,25 @@ int app_init(struct app * app)
 
     int ret = 0;
 
+    // open syslog
+    openlog("app", LOG_CONS | LOG_PID, LOG_USER);
+
     // create epoll instance
     ret = epoll_create1(EPOLL_CLOEXEC);
     if (-1 == ret) {
-        warn("%s:%d: epoll_create1", __func__, __LINE__);
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: epoll_create1: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
 
 
     // Set up a pipe for communication between pthreads
     ret = pipe(app->pipe_fds);
     if (-1 == ret) {
-        warn("%s:%d: pipe", __func__, __LINE__);
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: pipe: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
+
+    return 0;
 }
 
 
@@ -107,9 +117,10 @@ int app_can_task_start(struct app * app)
 {
     int ret = pthread_create(&app->can_thread, NULL, socketcan_task, &app->pipe_fds[1]);
     if (0 != ret) {
-        warn("%s:%d: pthread_create", __func__, __LINE__);
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: pthread_create: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
+    return 0;
 }
 
 
@@ -119,9 +130,10 @@ int app_nats_task_start(struct app * app)
 {
     int ret = pthread_create(&app->nats_thread, NULL, nats_task, &app->pipe_fds[0]);
     if (0 != ret) {
-        warn("%s:%d: pthread_create", __func__, __LINE__);
-        exit(EXIT_FAILURE);
+        syslog(LOG_ERR, "%s:%d: pthread_create: %s", __func__, __LINE__, strerror(errno));
+        return -1;
     }
+    
 }
 
 
@@ -139,7 +151,10 @@ int main(int argc, char * argv[])
     }
 
     // Block signals; we'll deal with them later.
-    app_signals_block(&app);
+    ret = app_signals_block(&app);
+    if (-1 == ret) {
+        exit(EXIT_FAILURE);
+    }
 
     // Start threads
     ret = app_can_task_start(&app);
@@ -157,7 +172,7 @@ int main(int argc, char * argv[])
     for (;;) {
         ret = sigwaitinfo(&app.sigset, &siginfo);
         if (-1 == ret) {
-            warn("sigwaitinfo");
+            syslog(LOG_ERR, "%s:%d: sigwaitinfo: %s", __func__, __LINE__, strerror(errno));
             exit(EXIT_FAILURE);
         }
 
