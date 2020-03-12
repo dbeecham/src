@@ -1,0 +1,32 @@
+[
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-Iinclude",
+            "-Iinc",
+            "-Isrc",
+            "-Wall",
+            "-Wextra",
+            "-Wno-implicit-fallthrough",
+            "-Wno-unused-const-variable",
+            "-std=c11",
+            "-g3",
+            "-Os",
+            "-D_FORTIFY_SOURCE=2",
+            "-fexceptions",
+            "-fasynchronous-unwind-tables",
+            "-fpie",
+            "-fstack-protector-strong",
+            "-grecord-gcc-switches",
+            "-Werror=format-security",
+            "-Werror=implicit-function-declaration",
+            "-I/usr/include/postgresql",
+            "-o",
+            "postgresclient.o",
+            "postgresclient.c"
+        ],
+        "directory": "/home/dbe/src/c/cli/postgres",
+        "file": "postgresclient.c"
+    }
+]
