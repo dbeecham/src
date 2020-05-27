@@ -8,7 +8,6 @@
 # * set clean target
 
 
-
 #########################################
 # VARIABLES - overridable by make flags #
 #########################################
@@ -37,6 +36,7 @@ INSTALL        = install
 BEAR           = bear
 COMPLEXITY     = complexity
 CFLOW          = cflow
+SED            = sed
 NEATO          = neato
 CTAGS          = ctags
 SCAN_BUILD     = scan-build
@@ -70,6 +70,9 @@ default: all
 all: hw
 
 hw: hw.o hw_tcp_task.o hw_nats_task.o hw_client_parser.o
+
+cscope.files: hw.c.deps hw_tcp_task.c.deps hw_nats_task.c.deps hw_client_parser.c.deps hw_client_parser.c
+	$(Q)cat hw.c.deps hw_tcp_task.c.deps hw_nats_task.c.deps hw_client_parser.c.deps | sort | uniq > $@
 
 # }}}
 
@@ -177,10 +180,10 @@ install: $(DESTDIR)$(PREFIX)/bin/hw
 # {{{
 
 clean:
-	rm -f *.o test_driver *.gcda *.gcno *.gcov *.cflow 
+	rm -f *.o test_driver *.gcda *.gcno *.gcov *.cflow *deps hw_client_parser.c
 
 distclean: clean
-	rm -f *.so hw compile_commands.json cscope.files
+	rm -f *.so hw compile_commands.json cscope.files cscope*out
 
 # }}}
 
@@ -249,6 +252,10 @@ $(DESTDIR)$(PREFIX)/bin/%: % | $(DESTDIR)$(PREFIX)/bin
 	@echo "$(INSTALL_COLOR)INSTALL$(NO_COLOR) $@"
 	$(Q)$(INSTALL) -m 0755 $< $@
 
+%.deps: %
+	@echo "$(CC_COLOR)CC$(NO_COLOR) $@"
+	$(Q)$(CC) -c $(CFLAGS) $(CPPFLAGS) -M $^ | $(SED) -e 's/[\\ ]/\n/g' | $(SED) -e '/^$$/d' -e '/\.o:[ \t]*$$/d' | sort | uniq > $@
+
 %: %.o
 	@echo "$(LD_COLOR)LD$(NO_COLOR) $@"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $^ $(LOADLIBES) $(LDLIBS)
@@ -294,7 +301,7 @@ $(DESTDIR)$(PREFIX)/bin/%: % | $(DESTDIR)$(PREFIX)/bin
 # build c files from markdown files - literate programming style
 %.c: %.c.md
 	@echo "$(CC_COLOR)CC$(NO_COLOR) $@"
-	$(Q)cat $< | sed -n '/^```c/,/^```/ p' | sed '/^```/ d' > $@
+	$(Q)cat $< | $(SED) -n '/^```c/,/^```/ p' | $(SED) '/^```/ d' > $@
 
 # }}}
 
