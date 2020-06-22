@@ -244,6 +244,10 @@ $(DESTDIR)$(PREFIX)/lib/%.so: %.so | $(DESTDIR)$(PREFIX)/lib
 	@echo "$(INSTALL_COLOR)INSTALL$(NO_COLOR) $@"
 	$(Q)$(INSTALL) -m 0644 $< $@
 
+$(DESTDIR)$(PREFIX)/lib/%.a: %.a | $(DESTDIR)$(PREFIX)/lib
+	@echo "$(INSTALL_COLOR)INSTALL$(NO_COLOR) $@"
+	$(Q)$(INSTALL) -m 0644 $< $@
+
 $(DESTDIR)$(PREFIX)/include/%.h: %.h | $(DESTDIR)$(PREFIX)/include
 	@echo "$(INSTALL_COLOR)INSTALL$(NO_COLOR) $@"
 	$(Q)$(INSTALL) -m 0644 $< $@
