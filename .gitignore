@@ -1,0 +1,9 @@
+*.swp
+.ccls-cache
+*.taghl
+*.o
+cscope.files
+cscope.in.out
+cscope.po.out
+flake.nix
+flake.lock
