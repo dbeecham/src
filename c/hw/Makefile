@@ -277,6 +277,15 @@ $(DESTDIR)$(PREFIX)/bin/%: % | $(DESTDIR)$(PREFIX)/bin
 	@echo "$(CC_COLOR)CC$(NO_COLOR) $@"
 	$(Q)$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $^
 
+# UPX-minified binaries
+%.upx: %
+	@echo "$(LD_COLOR)UPX$(NO_COLOR) $@"
+	$(Q)$(UPX) -o $@ $^
+
+%.stripped: %
+	@echo "$(LD_COLOR)STRIP$(NO_COLOR) $@"
+	$(Q)$(STRIP) -o $@ $^
+
 # for each c file, it's possible to generate a cflow flow graph.
 %.c.cflow: %.c
 	@echo "$(CC_COLOR)CC$(NO_COLOR) $@"
