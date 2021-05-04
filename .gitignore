@@ -7,3 +7,4 @@ cscope.in.out
 cscope.po.out
 flake.nix
 flake.lock
+compile_commands.json
