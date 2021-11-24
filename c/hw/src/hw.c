@@ -29,6 +29,7 @@
 
 #define EPOLL_NUM_EVENTS 8
 
+
 int hw_init (
     struct hw_s * hw
 )
@@ -141,7 +142,7 @@ static int hw_epoll_event_signal_fd_sighup (
         EPOLL_CTL_MOD,
         event->data.fd,
         &(struct epoll_event){
-            .events = EPOLLIN | EPOLLOUT | EPOLLERR | EPOLLHUP | EPOLLET | EPOLLONESHOT,
+            .events = EPOLLIN | EPOLLONESHOT,
             .data = {
                 .fd = event->data.fd
             }
@@ -228,6 +229,7 @@ static int hw_epoll_handle_events (
         if (0 != ret) {
             return ret;
         }
+
     }
     return 0;
 }

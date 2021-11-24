@@ -3,12 +3,12 @@
     defaultPackage.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.stdenv.mkDerivation {
       name = "sqlite0";
       src = ./.;
-      nativeBuildInputs = [ nixpkgs.legacyPackages.x86_64-linux.ragel ];
+      buildDepsDeps = [ 
+        nixpkgs.legacyPackages.x86_64-linux.ragel
+      ];
       buildInputs = [ 
-        
-        nixpkgs.legacyPackages.x86_64-linux.sqlite3
-
-        ];
+        nixpkgs.legacyPackages.x86_64-linux.sqlite
+      ];
       installFlags = [ "DESTDIR=$(out)" "PREFIX=/" ];
     };
   };
