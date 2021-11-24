@@ -1,3 +1,5 @@
+#define _DEFAULT_SOURCE
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -14,6 +16,10 @@
 #define BUFLEN 128
 
 #define STR_CONNECT_FAILED "connect failed"
+
+
+// this code is bad, dont use it.
+
 
 int main(int argc, char *argv[])
 {
@@ -55,15 +61,15 @@ int main(int argc, char *argv[])
     freeaddrinfo(servinfo);
 
     if (NULL == p) {
-        write(STDERR_FILENO, STR_CONNECT_FAILED, strlen(STR_CONNECT_FAILED));
+        printf("%s:%d:%s: no\n", __FILE__, __LINE__, __func__);
         exit(EXIT_FAILURE);
     }
 
     if (-1 == write(sockfd, "hello\n", 6)) {
-        close(sockfd);
         err(EXIT_FAILURE, "write");
+        close(sockfd);
     }
     close(sockfd);
 
-    exit(EXIT_SUCCESS);
+    return 0;
 }
