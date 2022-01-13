@@ -66,9 +66,11 @@ int sqlite0_init_schema_migrate_full (
     if (SQLITE_OK != ret) {
         syslog(LOG_ERR, "%s:%d:%s: sqlite3_exec returned %d: %s",
             __FILE__, __LINE__, __func__, ret, err);
+        sqlite3_free(err);
         return -1;
     }
 
+    sqlite3_free(err);
     return 0;
 }
 
@@ -167,8 +169,10 @@ int sqlite0_init_sqlite (
     if (SQLITE_OK != ret) {
         syslog(LOG_ERR, "%s:%d:%s: sqlite3_exec returned %d: %s",
             __FILE__, __LINE__, __func__, ret, err);
+        sqlite3_free(err);
         return -1;
     }
+    sqlite3_free(err);
     
     ret = sqlite0_init_sqlite_migrate(sqlite0);
     if (-1 == ret) {
@@ -255,8 +259,10 @@ int sqlite0_test_exec (
     );
     if (SQLITE_OK != ret) {
         printf("%s:%d:%s: sqlite3_exec: %s\n", __FILE__, __LINE__, __func__, err);
+        sqlite3_free(err);
         return -1;
     }
+    sqlite3_free(err);
 
     return 0;
 }
