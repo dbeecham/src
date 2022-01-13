@@ -8,6 +8,7 @@ CFLAGS         = -Isrc -Wall -Wextra \
                  -fstack-protector-strong -grecord-gcc-switches \
                  -Werror=format-security \
                  -Werror=implicit-function-declaration -Wl,-z,defs -Wl,-z,now \
+				 -Wno-unused-parameter \
                  -Wl,-z,relro $(EXTRA_CFLAGS)
 LDFLAGS        = -Os $(EXTRA_LDFLAGS)
 LDLIBS         = -lsqlite3 $(EXTRA_LDLIBS)
