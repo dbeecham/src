@@ -1,4 +1,4 @@
-all-y = example
+all-y = example.stripped
 
 default: all
 
@@ -9,5 +9,8 @@ all: $(all-y)
 
 %.o: %.zig
 	zig build-obj --strip -O ReleaseSmall -femit-bin=$@ $^
+
+%.stripped: %
+	strip -o $@ $^
 
 vpath %.zig src
