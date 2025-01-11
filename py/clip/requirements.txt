@@ -1,0 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/nightly/cpu
+accelerate
+clip @ git+https://github.com/openai/CLIP.git
+torch
+torchaudio
+torchvision
+transformers
+accelerate
